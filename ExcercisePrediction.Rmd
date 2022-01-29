@@ -1,0 +1,107 @@
+---
+title: "Predicting Exercise Activity Given Accelerometer Data"
+date: "1/29/2022" 
+output: 
+  html_document:
+    keep_md: true
+---
+## Overview
+This analysis builds a predictive model given accelerometer data. Specifically, a set of measurements from accelerometers correspond to one of five specific classes of activity. This analysis will first identify which subset of these variables should be used and then build a predictive model to determine the activity corresponding to a given set of measurements from the accelerometers.
+
+## Getting the Data
+Since there are no outcome labels (classe variable) for the testing csv file, it will be treated as a validation set. The data in the training csv file will be split into training and testing sets, and so I will be utilizing **cross-validation** via random subsampling.
+
+```{r, message = FALSE, cache = TRUE}
+library(caret)
+```
+```{r, cache = TRUE}
+if(!file.exists("./training_testing.csv")) {
+      download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 
+                    "./training_testing.csv", method = "curl")}
+
+if(!file.exists("./validation.csv")) { 
+      download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 
+                    "./validation.csv", method = "curl")}
+      
+training_testing <- read.csv("./training_testing.csv")
+validation <- read.csv("./validation.csv")
+
+set.seed(999)
+indices <- createDataPartition(training_testing$classe, p = .7, list = FALSE)
+training <- training_testing[indices,]; trainingOutcomes <-  as.factor(training$classe)
+testing <- training_testing[-indices,]; testingOutcomes <-  as.factor(testing$classe)
+```
+
+## Exploring, Cleaning the Data
+Let's look at the structure of the data.
+```{r}
+str(training, list.len = 15)
+```
+Looking at the structure of the training data, we can see there are 159 independent variables and so 160 total variables. The first few of these, including user name and some timestamp measurements, shouldn't be used in making the the model because they are irrelevant at best, and could lead to overfitting at worst. 
+
+We can further see a mixture of numeric, integer and character vectors. It seems some of these character vectors are supposed to be numerics/integers; however, coercing these vectors to numerics reveals that most of the values in many of them seem to be NA. Thus, it seems they may not have much predictive value; further, imputing them will likely be computationally expensive and there's also very little information to use to impute all of the missing values with.
+
+```{r, message = FALSE, warning = FALSE, cache = TRUE}
+slices <- c(sum(is.na(as.numeric(training$kurtosis_roll_belt))), sum(!is.na(as.numeric(training$kurtosis_roll_belt))))
+slices2 <- c(sum(is.na(as.numeric(training$skewness_roll_belt))), sum(!is.na(as.numeric(training$skewness_roll_belt))))
+par(mfrow = c(1,2))
+pie(slices, col = 2:3, labels = c("NA", "Not NA"), main = "kurtosis_roll_belt values")
+pie(slices2, col = 2:3, labels = c("NA", "Not NA"), main = "skewness_roll_belt values")
+```
+
+So, at this point, I will remove the first few predictors and all that are not numerics/integers. 
+
+```{r, cache = TRUE}
+training <- training[,-(1:5)]
+classes <- lapply(training, class)
+numericIndices <- which(classes == "integer" | classes == "numeric")
+training <- training[,numericIndices]
+```
+
+However, there are still NA values in some of our remaining predictors. I am going to take a look at the average proportion of missing values in the predictors that have at least one missing value.
+```{r, cache = TRUE}
+NA.proportions <- numeric()
+nonNAIndices <- numeric()
+for (i in 1:ncol(training)) {
+      if(sum(is.na(training[,i])) == 0) {nonNAIndices <- c(nonNAIndices, i)}
+      else {NA.proportions <- c(NA.proportions, mean(is.na(training[,i])))}
+}
+meanNA <- mean(NA.proportions)
+```
+The average percentage of observations that are NA for predictors that have at least one NA is `r (100 * round(meanNA, 4))`. Being so high, I will just remove all remaining predictors that have any missing values in them. Now we have the full set of predictors that will be used for building our model, the names of which are listed below.
+```{r, cache = TRUE}
+training <- training[,nonNAIndices]
+training$classe <- trainingOutcomes
+names(training)
+```
+
+## Building a Model
+Being that **random forests** tend to perform well, I will build a random forest model.
+
+```{r, cache = TRUE, message = FALSE, warning = FALSE}
+model <- train(classe ~ ., data = training, method = "rf")
+```
+
+
+```{r}
+print(100)
+paste("TEST SET ACCURACY: ", confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])
+table(predict(model, testing), testingOutcomes)
+```
+
+The test set accuracy shown above should be a strong indicator of our **out of sample error**. Thus, there is good reason to believe that this random forest model will yield accurate predictions on new data, such as the validation data. The predicted outcomes for the validation set are given below.
+
+```{r}
+paste("VALIDATION PREDICTIONS: ", predict(model, validation))
+```
+
+Let's look at which predictor variables were most important in creating this model.
+```{r}
+varImp(model)
+```
+
+## Summary
+The above analysis built a random forest predictive model. Given accelerometer data, this model yields a corresponding activity label. Random subsampling **cross-validation** was used to estimate an **out of sample error**.
+
+
+
