@@ -2,7 +2,7 @@
 title: "Predicting Exercise Activity Given Accelerometer Data"
 date: "1/29/2022" 
 output: 
-  html_document:
+ html_document:
     keep_md: true
 ---
 ## Overview
@@ -84,8 +84,7 @@ model <- train(classe ~ ., data = training, method = "rf")
 
 
 ```{r}
-print(100)
-paste("TEST SET ACCURACY: ", confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])
+paste("TEST SET ACCURACY: ", caret::confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])
 table(predict(model, testing), testingOutcomes)
 ```
 
@@ -97,7 +96,7 @@ paste("VALIDATION PREDICTIONS: ", predict(model, validation))
 
 Let's look at which predictor variables were most important in creating this model.
 ```{r}
-varImp(model)
+caret::varImp(model)
 ```
 
 ## Summary

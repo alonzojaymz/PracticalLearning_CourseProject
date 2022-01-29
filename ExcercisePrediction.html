@@ -262,9 +262,7 @@ names(training)</code></pre>
 <h2>Building a Model</h2>
 <p>Being that <strong>random forests</strong> tend to perform well, I will build a random forest model.</p>
 <pre class="r"><code>model &lt;- train(classe ~ ., data = training, method = &quot;rf&quot;)</code></pre>
-<pre class="r"><code>print(100)</code></pre>
-<pre><code>## [1] 100</code></pre>
-<pre class="r"><code>paste(&quot;TEST SET ACCURACY: &quot;, confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])</code></pre>
+<pre class="r"><code>paste(&quot;TEST SET ACCURACY: &quot;, caret::confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])</code></pre>
 <pre><code>## [1] &quot;TEST SET ACCURACY:  0.997790994052676&quot;</code></pre>
 <pre class="r"><code>table(predict(model, testing), testingOutcomes)</code></pre>
 <pre><code>##    testingOutcomes
@@ -287,7 +285,7 @@ names(training)</code></pre>
 ## [17] &quot;VALIDATION PREDICTIONS:  A&quot; &quot;VALIDATION PREDICTIONS:  B&quot;
 ## [19] &quot;VALIDATION PREDICTIONS:  B&quot; &quot;VALIDATION PREDICTIONS:  B&quot;</code></pre>
 <p>Let’s look at which predictor variables were most important in creating this model.</p>
-<pre class="r"><code>varImp(model)</code></pre>
+<pre class="r"><code>caret::varImp(model)</code></pre>
 <pre><code>## rf variable importance
 ## 
 ##   only 20 most important variables shown (out of 53)

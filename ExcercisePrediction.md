@@ -136,15 +136,7 @@ model <- train(classe ~ ., data = training, method = "rf")
 
 
 ```r
-print(100)
-```
-
-```
-## [1] 100
-```
-
-```r
-paste("TEST SET ACCURACY: ", confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])
+paste("TEST SET ACCURACY: ", caret::confusionMatrix(testingOutcomes, predict(model, testing))$overall[1])
 ```
 
 ```
@@ -188,7 +180,7 @@ paste("VALIDATION PREDICTIONS: ", predict(model, validation))
 Let's look at which predictor variables were most important in creating this model.
 
 ```r
-varImp(model)
+caret::varImp(model)
 ```
 
 ```
